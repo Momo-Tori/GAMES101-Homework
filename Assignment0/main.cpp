@@ -1,24 +1,25 @@
-#include<cmath>
-#include<eigen3/Eigen/Core>
-#include<eigen3/Eigen/Dense>
-#include<iostream>
+#include <cmath>
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Dense>
+#include <iostream>
 
-int main(){
+int main()
+{
 
     // Basic Example of cpp
     std::cout << "Example of cpp \n";
     float a = 1.0, b = 2.0;
     std::cout << a << std::endl;
-    std::cout << a/b << std::endl;
+    std::cout << a / b << std::endl;
     std::cout << std::sqrt(b) << std::endl;
     std::cout << std::acos(-1) << std::endl;
-    std::cout << std::sin(30.0/180.0*acos(-1)) << std::endl;
+    std::cout << std::sin(30.0 / 180.0 * acos(-1)) << std::endl;
 
     // Example of vector
     std::cout << "Example of vector \n";
     // vector definition
-    Eigen::Vector3f v(1.0f,2.0f,3.0f);
-    Eigen::Vector3f w(1.0f,0.0f,0.0f);
+    Eigen::Vector3f v(1.0f, 2.0f, 3.0f);
+    Eigen::Vector3f w(1.0f, 0.0f, 0.0f);
     // vector output
     std::cout << "Example of output \n";
     std::cout << v << std::endl;
@@ -33,7 +34,7 @@ int main(){
     // Example of matrix
     std::cout << "Example of matrix \n";
     // matrix definition
-    Eigen::Matrix3f i,j;
+    Eigen::Matrix3f i, j;
     i << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0;
     j << 2.0, 3.0, 1.0, 4.0, 6.0, 5.0, 9.0, 7.0, 8.0;
     // matrix output
@@ -43,6 +44,14 @@ int main(){
     // matrix scalar multiply i * 2.0
     // matrix multiply i * j
     // matrix multiply vector i * v
+
+    Eigen::Vector3d P(2, 1, 1);
+    Eigen::Matrix3d rot, pingyi;
+    rot << cos(45), -cos(45), 0, cos(45), cos(45), 0, 0, 0, 1;
+    pingyi << 1, 0, 1, 0, 1, 2, 0, 0, 1;
+    auto x = rot * P;
+    std::cout << x << std::endl;
+    std::cout << pingyi * x << std::endl;
 
     return 0;
 }
