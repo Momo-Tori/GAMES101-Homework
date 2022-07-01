@@ -76,8 +76,10 @@ namespace rst
 
     private:
         void draw_line(Eigen::Vector3f begin, Eigen::Vector3f end);
+        
+        std::tuple<int, int, int, int> rasterize_triangle(const Triangle& t);
 
-        void rasterize_triangle(const Triangle& t);
+        void set(int x,int y,const Triangle& t);
 
         // VERTEX SHADER -> MVP -> Clipping -> /.W -> VIEWPORT -> DRAWLINE/DRAWTRI -> FRAGSHADER
 
@@ -99,5 +101,8 @@ namespace rst
 
         int next_id = 0;
         int get_next_id() { return next_id++; }
+
+        std::vector<float> z_buf;
+        std::vector<Eigen::Vector3f> color_buf;
     };
 }
