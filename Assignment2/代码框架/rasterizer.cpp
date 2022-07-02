@@ -105,11 +105,6 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
     float f1 = (50 - 0.1) / 2.0;
     float f2 = (50 + 0.1) / 2.0;
 
-    int xMin=std::numeric_limits<int>::max();
-    int xMax=std::numeric_limits<int>::min();
-    int yMin=std::numeric_limits<int>::max();
-    int yMax=std::numeric_limits<int>::min();
-
     Eigen::Matrix4f mvp = projection * view * model;
     for (auto& i : ind)
     {
@@ -144,31 +139,8 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         t.setColor(1, col_y[0], col_y[1], col_y[2]);
         t.setColor(2, col_z[0], col_z[1], col_z[2]);
 
-        auto [a,b,c,d]= rasterize_triangle(t);
-        xMin=min(xMin,a);
-        xMax=max(xMax,b);
-        yMin=min(yMin,c);
-        yMax=max(yMax,d);
+        rasterize_triangle(t);
     }
-
-
-//SSAA实现
-    std::cout<<"重新渲染区域 x,min,max:y,min,max:"<<xMin<<' '<<xMax<<' '<<yMin<<' '<<yMax<<std::endl;
-
-    
-    for (int x=xMin;x<xMax;x++)
-    {
-        for (int y=yMin;y<=yMax;y++)
-        {
-            Eigen::Vector3f point = Eigen::Vector3f(x, y, 1.0f);
-            Eigen::Vector3f line_color = (color_buf[(height-1-y)*width*4 + x*4+0]
-                                        +color_buf[(height-1-y)*width*4 + x*4+1]
-                                        +color_buf[(height-1-y)*width*4 + x*4+2]
-                                        +color_buf[(height-1-y)*width*4 + x*4+3])/4;
-            set_pixel(point,line_color);
-        }
-    } 
-
 }
 
 void rst::rasterizer::set(int x,int y,const Triangle& t,bool judge)
@@ -195,11 +167,18 @@ void rst::rasterizer::set(int x,int y,const Triangle& t,bool judge)
             }
         }
     }
+    Eigen::Vector3f point = Eigen::Vector3f(x, y, 1.0f);
+    int position=(height-1-y)*width*4+x*4;
+    Eigen::Vector3f line_color = (color_buf[position]
+                                +color_buf[position+1]
+                                +color_buf[position+2]
+                                +color_buf[position+3])/4;
+    set_pixel(point,line_color);
 
 }
 
 //Screen space rasterization
-std::tuple<int, int, int, int> rst::rasterizer::rasterize_triangle(const Triangle& t) {
+void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     auto v = t.toVector4();
 
     // iterate through the pixel and find if the current pixel is inside the triangle
@@ -214,17 +193,6 @@ std::tuple<int, int, int, int> rst::rasterizer::rasterize_triangle(const Triangl
         middle.swap(right);
     if(left.x()>middle.x())
         left.swap(middle);
-
-    int xMin=static_cast<int>(min<float>(v[0].x(),v[1].x(),v[2].x(),width-1));
-    xMin=max(0,xMin);
-    int xMax=static_cast<int>(max<float>(v[0].x(),v[1].x(),v[2].x(),0));
-    xMax=min(width-1,xMax);
-    int yMin=static_cast<int>(min<float>(v[0].y(),v[1].y(),v[2].y(),height-1));
-    yMin=max(0,yMin);
-    int yMax=static_cast<int>(max<float>(v[0].y(),v[1].y(),v[2].y(),0));
-    yMax=min(height-1,yMax);
-    std::cout<<"三角形 x,min,max:y,min,max:"<<xMin<<' '<<xMax<<' '<<yMin<<' '<<yMax<<std::endl;
-
 
     float kx1=(right.y()-left.y())/(right.x()-left.x());
 
@@ -273,9 +241,6 @@ std::tuple<int, int, int, int> rst::rasterizer::rasterize_triangle(const Triangl
         i++;
         set(x,i,t,false);
     } 
-    
-
-return {xMin,xMax,yMin,yMax};
 
 //一般的实现
 /*     for (int x=xMin;x<=xMax;x++)
