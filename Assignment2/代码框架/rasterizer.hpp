@@ -79,7 +79,7 @@ namespace rst
         
         std::tuple<int, int, int, int> rasterize_triangle(const Triangle& t);
 
-        void set(int x,int y,const Triangle& t);
+        void set(int x,int y,const Triangle& t,bool judge);
 
         // VERTEX SHADER -> MVP -> Clipping -> /.W -> VIEWPORT -> DRAWLINE/DRAWTRI -> FRAGSHADER
 

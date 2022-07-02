@@ -171,7 +171,7 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
 
 }
 
-void rst::rasterizer::set(int x,int y,const Triangle& t)
+void rst::rasterizer::set(int x,int y,const Triangle& t,bool judge)
 {
     auto v = t.toVector4();
 
@@ -179,7 +179,7 @@ void rst::rasterizer::set(int x,int y,const Triangle& t)
     {
         float xf=x+0.25+0.5*(i&1);
         float yf=y+0.25+0.5*((i&2)>>1);
-        if(insideTriangle(xf,yf,v.data()))
+        if(judge||insideTriangle(xf,yf,v.data()))
         {
             auto[alpha, beta, gamma] = computeBarycentric2D(xf, yf, v.data());
             float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
@@ -206,6 +206,15 @@ std::tuple<int, int, int, int> rst::rasterizer::rasterize_triangle(const Triangl
 
 //SSAA实现
 
+    Eigen::Vector4f left=v[0],middle=v[1],right=v[2];
+
+    if(left.x()>middle.x())
+        left.swap(middle);
+    if(middle.x()>right.x())
+        middle.swap(right);
+    if(left.x()>middle.x())
+        left.swap(middle);
+
     int xMin=static_cast<int>(min<float>(v[0].x(),v[1].x(),v[2].x(),width-1));
     xMin=max(0,xMin);
     int xMax=static_cast<int>(max<float>(v[0].x(),v[1].x(),v[2].x(),0));
@@ -216,23 +225,55 @@ std::tuple<int, int, int, int> rst::rasterizer::rasterize_triangle(const Triangl
     yMax=min(height-1,yMax);
     std::cout<<"三角形 x,min,max:y,min,max:"<<xMin<<' '<<xMax<<' '<<yMin<<' '<<yMax<<std::endl;
 
-    for(int x=xMin;x<=xMax;x++)
+
+    float kx1=(right.y()-left.y())/(right.x()-left.x());
+
+    float kx2=std::numeric_limits<float>::max();
+    if(middle.x()-left.x()!=0)
+        kx2=(middle.y()-left.y())/(middle.x()-left.x());
+    for(int x=left.x();x<middle.x();x++)
     {
-        bool begin=false;
-        for (int y=yMin;y<=yMax;y++)
+        int y1=left.y()+kx1*(x-left.x()),y2=left.y()+kx2*(x-left.x());
+        int i=min(y1,y2)-1;
+        int end=max(y1,y2)-1;
+        set(x,i,t,false);
+        i++;
+        set(x,i,t,false);
+        i++;
+        for (;i<end;i++)
         {
-            if(insideTriangle(x+0.5,y+0.5,v.data()))
-            {
-                begin=true;
-                set(x,y,t);
-            }
-            else if(begin==true)
-            {
-                set(x,y,t);
-                break;
-            }
+            set(x,i,t,true);
         }
+        set(x,i,t,false);
+        i++;
+        set(x,i,t,false);
+        i++;
+        set(x,i,t,false);
     } 
+
+    float kx3=std::numeric_limits<float>::max();
+    if(middle.x()-right.x()!=0)
+        kx3=(middle.y()-right.y())/(middle.x()-right.x());
+    for(int x=middle.x();x<=right.x();x++)
+    {
+        int y1=right.y()+kx1*(x-right.x()),y2=right.y()+kx3*(x-right.x());
+        int i=min(y1,y2)-1;
+        int end=max(y1,y2)-1;
+        set(x,i,t,false);
+        i++;
+        set(x,i,t,false);
+        i++;
+        for (;i<end;i++)
+        {
+            set(x,i,t,true);
+        }
+        set(x,i,t,false);
+        i++;
+        set(x,i,t,false);
+        i++;
+        set(x,i,t,false);
+    } 
+    
 
 return {xMin,xMax,yMin,yMax};
 
