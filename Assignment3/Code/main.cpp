@@ -105,6 +105,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload)
     Eigen::Vector3f return_color = {0, 0, 0};
     if (payload.texture)
     {
+
         // TODO: Get the texture value at the texture coordinates of the current fragment
     }
     Eigen::Vector3f texture_color;
@@ -131,8 +132,27 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload)
 
     for (auto &light : lights)
     {
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
-        // components are. Then, accumulate that result on the *result_color* object.
+        Eigen::Vector3f La;
+        La << ka[0] * amb_light_intensity[0], ka[1] * amb_light_intensity[1], ka[2] * amb_light_intensity[2];
+
+        float LdArray[3];
+        for (int i = 0; i < 3; i++)
+        {
+            LdArray[i] = kd[i] * light.intensity[i] * std::max(normal.dot((light.position - point).normalized()), 0.f) / pow((light.position - point).norm(), 2);
+        }
+        Eigen::Vector3f Ld;
+        Ld << LdArray[0], LdArray[1], LdArray[2];
+
+        float LsArray[3];
+        for (int i = 0; i < 3; i++)
+        {
+            LsArray[i] = ks[i] * light.intensity[i] *
+                         pow(std::max(normal.dot(((light.position - point).normalized() + (eye_pos - point).normalized()).normalized()), 0.f), p) / pow((light.position - point).norm(), 2);
+        }
+        Eigen::Vector3f Ls;
+        Ls << LsArray[0], LsArray[1], LsArray[2];
+
+        result_color += La + Ld + Ls;
     }
 
     return result_color * 255.f;
@@ -140,7 +160,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload)
 
 Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload &payload)
 {
-    Eigen::Vector3f ka = Eigen::Vector3f(0.05, 0.05, 0.05);
+    Eigen::Vector3f ka = Eigen::Vector3f(0.005, 0.005, 0.005);
     Eigen::Vector3f kd = payload.color;
     Eigen::Vector3f ks = Eigen::Vector3f(0.7937, 0.7937, 0.7937);
 
@@ -160,7 +180,8 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload &payload)
     Eigen::Vector3f result_color = {0, 0, 0};
     for (auto &light : lights)
     {
-        Eigen::Vector3f La = ka;
+        Eigen::Vector3f La;
+        La << ka[0] * amb_light_intensity[0], ka[1] * amb_light_intensity[1], ka[2] * amb_light_intensity[2];
 
         float LdArray[3];
         for (int i = 0; i < 3; i++)
@@ -169,7 +190,7 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload &payload)
         }
         Eigen::Vector3f Ld;
         Ld << LdArray[0], LdArray[1], LdArray[2];
-        
+
         float LsArray[3];
         for (int i = 0; i < 3; i++)
         {
@@ -180,7 +201,6 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload &payload)
         Ls << LsArray[0], LsArray[1], LsArray[2];
 
         result_color += La + Ld + Ls;
-        // components are. Then, accumulate that result on the *result_color* object.
     }
 
     return result_color * 255.f;
