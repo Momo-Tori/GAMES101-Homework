@@ -40,12 +40,33 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
     return Vector4f(v3.x(), v3.y(), v3.z(), w);
 }
 
-inline float times(float x1,float y1,float x2,float y2)
-{
-    return x1*y2-x2*y1;
-}
 
-//利用三个矢量夹角之和为360度
+
+// inline float times(Vector3f const & v1,Vector3f const & v2)
+// {
+//     return v1.x()*v2.y()-v2.x()*v1.y();
+// }
+
+
+//叉乘判断
+// static bool insideTriangle(float x, float y, const Vector4f* _vi)
+// {   
+//     Vector3f v[3],P;
+//     P << x,y,1;
+//     for (int i=0;i<3;i++)
+//     {
+//         v[i]<<_vi[i].x()/_vi[i].z(),_vi[i].y()/_vi[i].z(),1;
+//     }
+//     float
+//     z11=times(P-v[0],v[1]-v[0]),z12=times(v[2]-v[0],v[1]-v[0]),
+//     z21=times(P-v[1],v[2]-v[1]),z22=times(v[0]-v[1],v[2]-v[1]),
+//     z31=times(P-v[2],v[0]-v[2]),z32=times(v[1]-v[2],v[0]-v[2]);
+//     return z11*z12>=0
+//         && z21*z22>=0
+//         && z31*z32>=0;
+// }
+
+//利用三个矢量夹角之和为360度，经过测试速度基本相同，该算法较快
 static bool insideTriangle(float x, float y, const Vector4f* _vi)
 {   
     Vector3f _v[3];
