@@ -105,8 +105,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload)
     Eigen::Vector3f return_color = {0, 0, 0};
     if (payload.texture)
     {
-
-        // TODO: Get the texture value at the texture coordinates of the current fragment
+        return_color=payload.texture->getColor(payload.tex_coords[0],payload.tex_coords[1]);
     }
     Eigen::Vector3f texture_color;
     texture_color << return_color.x(), return_color.y(), return_color.z();
