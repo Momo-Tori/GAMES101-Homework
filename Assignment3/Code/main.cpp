@@ -105,7 +105,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload)
     Eigen::Vector3f return_color = {0, 0, 0};
     if (payload.texture)
     {
-        return_color=payload.texture->getColor(payload.tex_coords[0],payload.tex_coords[1]);
+        return_color = payload.texture->getColor(payload.tex_coords[0], payload.tex_coords[1]);
     }
     Eigen::Vector3f texture_color;
     texture_color << return_color.x(), return_color.y(), return_color.z();
@@ -227,23 +227,55 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload &payl
 
     float kh = 0.2, kn = 0.1;
 
-    // TODO: Implement displacement mapping here
+    // Implement bump mapping here
     // Let n = normal = (x, y, z)
+    float x = normal.x(), y = normal.y(), z = normal.z();
     // Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
+    Eigen::Vector3f t;
+
+    //这里的负号是为了有一个垂直的三角坐标
+    t << x * y / sqrt(x * x + z * z), -sqrt(x * x + z * z), z * y / sqrt(x * x + z * z);
     // Vector b = n cross product t
+    t.normalize();
+    Eigen::Vector3f b;
+    b = normal.cross(t);
     // Matrix TBN = [t b n]
-    // dU = kh * kn * (h(u+1/w,v)-h(u,v))
-    // dV = kh * kn * (h(u,v+1/h)-h(u,v))
-    // Vector ln = (-dU, -dV, 1)
-    // Position p = p + kn * n * h(u,v)
-    // Normal n = normalize(TBN * ln)
+    Eigen::Matrix3f TBN;
+    TBN << t, b, normal;
+
+    float u = payload.tex_coords.x();
+    float v = payload.tex_coords.y();
+    int w = payload.texture->width;
+    int h = payload.texture->height;
+
+    float uv = payload.texture->getColor(u, v).norm();
+
+    //点的位置随着法线贴图的灰值移动到正确的位置
+    point += (kn * normal * uv);
+
+    float dU = kh * kn * (payload.texture->getColor(u + 1.0 / w, v).norm() - uv);
+    float dV = kh * kn * (payload.texture->getColor(u, v + 1.0 / h).norm() - uv);
+    Eigen::Vector3f ln(-dU, -dV, 1);
+    //修正此处的法线方向
+    normal = (TBN * ln).normalized();
 
     Eigen::Vector3f result_color = {0, 0, 0};
 
     for (auto &light : lights)
     {
-        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
-        // components are. Then, accumulate that result on the *result_color* object.
+        Eigen::Vector3f La;
+        Eigen::Vector3f Ld;
+        Eigen::Vector3f Ls;
+        float distanceSquare = (light.position - point).squaredNorm();
+        for (int i = 0; i < 3; i++)
+        {
+            La[i] = ka[i] * amb_light_intensity[i];
+            Ld[i] = kd[i] * light.intensity[i] * std::max(normal.dot((light.position - point).normalized()), 0.f) / distanceSquare;
+            Ls[i] = ks[i] * light.intensity[i] *
+                    pow(std::max(normal.dot(((light.position - point).normalized() + (eye_pos - point).normalized()).normalized()), 0.f), p) / distanceSquare;
+        }
+
+        result_color += La + Ld + Ls;
     }
 
     return result_color * 255.f;
@@ -271,15 +303,23 @@ Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload &payload)
 
     float kh = 0.2, kn = 0.1;
 
-    // TODO: Implement bump mapping here
+    // Implement bump mapping here
     // Let n = normal = (x, y, z)
+    float x = normal.x(), y = normal.y(), z = normal.z();
     // Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
+    Eigen::Vector3f t;
+    t << x * y / sqrt(x * x + z * z), sqrt(x * x + z * z), z * y / sqrt(x * x + z * z);
     // Vector b = n cross product t
+    t = t.normalized();
+    Eigen::Vector3f b;
+    b = normal.cross(t);
     // Matrix TBN = [t b n]
-    // dU = kh * kn * (h(u+1/w,v)-h(u,v))
-    // dV = kh * kn * (h(u,v+1/h)-h(u,v))
-    // Vector ln = (-dU, -dV, 1)
-    // Normal n = normalize(TBN * ln)
+    Eigen::Matrix3f TBN;
+    TBN << t, b, normal;
+    float dU = kh * kn * ((payload.texture->getColor)(payload.tex_coords.x() + 1.0 / (payload.texture->width), payload.tex_coords.y()).norm() - (payload.texture->getColor)(payload.tex_coords.x(), payload.tex_coords.y()).norm());
+    float dV = kh * kn * (((payload.texture->getColor)(payload.tex_coords.x(), payload.tex_coords.y() + 1.0 / (payload.texture->height))).norm() - ((payload.texture->getColor)(payload.tex_coords.x(), payload.tex_coords.y())).norm());
+    Eigen::Vector3f ln(-dU, -dV, 1);
+    normal = (TBN * ln).normalized();
 
     Eigen::Vector3f result_color = {0, 0, 0};
     result_color = normal;
@@ -351,7 +391,7 @@ int main(int argc, const char **argv)
         }
         else if (argc == 3 && std::string(argv[2]) == "displacement")
         {
-            std::cout << "Rasterizing using the bump shader\n";
+            std::cout << "Rasterizing using the displacement shader\n";
             active_shader = displacement_fragment_shader;
         }
     }
