@@ -132,24 +132,16 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload &payload)
     for (auto &light : lights)
     {
         Eigen::Vector3f La;
-        La << ka[0] * amb_light_intensity[0], ka[1] * amb_light_intensity[1], ka[2] * amb_light_intensity[2];
-
-        float LdArray[3];
-        for (int i = 0; i < 3; i++)
-        {
-            LdArray[i] = kd[i] * light.intensity[i] * std::max(normal.dot((light.position - point).normalized()), 0.f) / pow((light.position - point).norm(), 2);
-        }
         Eigen::Vector3f Ld;
-        Ld << LdArray[0], LdArray[1], LdArray[2];
-
-        float LsArray[3];
+        Eigen::Vector3f Ls;
+        float distanceSquare = (light.position - point).squaredNorm();
         for (int i = 0; i < 3; i++)
         {
-            LsArray[i] = ks[i] * light.intensity[i] *
-                         pow(std::max(normal.dot(((light.position - point).normalized() + (eye_pos - point).normalized()).normalized()), 0.f), p) / pow((light.position - point).norm(), 2);
+            La[i] = ka[i] * amb_light_intensity[i];
+            Ld[i] = kd[i] * light.intensity[i] * std::max(normal.dot((light.position - point).normalized()), 0.f) / distanceSquare;
+            Ls[i] = ks[i] * light.intensity[i] *
+                    pow(std::max(normal.dot(((light.position - point).normalized() + (eye_pos - point).normalized()).normalized()), 0.f), p) / distanceSquare;
         }
-        Eigen::Vector3f Ls;
-        Ls << LsArray[0], LsArray[1], LsArray[2];
 
         result_color += La + Ld + Ls;
     }
@@ -338,6 +330,7 @@ int main(int argc, const char **argv)
     objl::Loader Loader;
     std::string obj_path = "../models/spot/";
 
+
     // Load .obj File
     bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
     for (auto mesh : Loader.LoadedMeshes)
@@ -358,6 +351,7 @@ int main(int argc, const char **argv)
     rst::rasterizer r(700, 700);
 
     auto texture_path = "hmap.jpg";
+
     r.set_texture(Texture(obj_path + texture_path));
 
     std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
