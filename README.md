@@ -65,5 +65,6 @@ bling-phong光照模型
 
 
 128ssp密度下的渲染图
+使用USTC Vlab运行
 用时:3862 seconds
 ![](pic/7/128spp.png)
