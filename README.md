@@ -81,3 +81,9 @@ bling-phong光照模型
 
 ![](pic/7/1024spp.png)
 
+1024sspSSAA
+
+用时:1627 seconds
+
+![](pic/7/1024sppSSAA.png)
+

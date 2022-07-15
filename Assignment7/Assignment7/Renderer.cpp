@@ -31,18 +31,28 @@ void Renderer::Render(const Scene &scene)
     int m = 0;
 
     // change the spp value to change sample ammount
-    int spp = 128;
+    int spp = 1024;
     std::cout << "SPP: " << spp << "\n";
 
-    auto castThread = [&](int m, Vector3f dir)
+    auto castThread = [&](int m, float x, float y)
     {
         {
             std::lock_guard lg(thTex);
             numThread++;
         }
-        for (int k = 0; k < spp; k++)
+        static const float dx[] = {1, 1, -1, -1};
+        const float Dx = (0.5 / (float)scene.width) * imageAspectRatio * scale;
+        static const float dy[] = {1, -1, 1, -1};
+        const float Dy = (0.5 / (float)scene.height) * scale;
+        for (int i = 0; i < 4; i++)
         {
-            framebuffer[m] += scene.castRay(Ray(eye_pos, dir), 0) / spp;
+            Vector3f sum;
+            for (int k = 0; k < spp; k++)
+            {
+                Vector3f dir = normalize(Vector3f(-x + dx[i] * Dx, y + dy[i] * Dy, 1));
+                sum += scene.castRay(Ray(eye_pos, dir), 0) / spp;
+            }
+            framebuffer[m] += sum / 4;
         }
         {
             std::lock_guard lg(thTex);
@@ -60,14 +70,12 @@ void Renderer::Render(const Scene &scene)
                       imageAspectRatio * scale;
             float y = (1 - 2 * (j + 0.5) / (float)scene.height) * scale;
 
-            Vector3f dir = normalize(Vector3f(-x, y, 1));
-
             {
                 std::unique_lock<std::mutex> lock(mutex);
                 cv.wait(lock, []
                         { return numThread < 12; });
             }
-            std::thread th(castThread, m, dir);
+            std::thread th(castThread, m, x, y);
             th.detach();
 
             m++;
