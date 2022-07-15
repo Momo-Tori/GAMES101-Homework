@@ -62,3 +62,8 @@ bling-phong光照模型
 用时:789 seconds
 
 ![](pic/7/16spp.png)
+
+
+128ssp密度下的渲染图
+用时:3862 seconds
+![](pic/7/128spp.png)
