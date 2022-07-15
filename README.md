@@ -56,3 +56,7 @@ bling-phong光照模型
 4ssp密度下的渲染图
 
 ![](pic/7/4spp.png)
+
+16ssp密度下的渲染图
+
+![](pic/7/16spp.png)
