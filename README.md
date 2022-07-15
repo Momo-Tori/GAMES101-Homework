@@ -53,18 +53,31 @@ bling-phong光照模型
 
 ### 7
 
+手写多线程加速，最大线程数为12，为本机最大逻辑cpu数量
+
 4ssp密度下的渲染图
+
+用时:91 seconds
 
 ![](pic/7/4spp.png)
 
 16ssp密度下的渲染图
 
-用时:789 seconds
+用时:90 seconds
 
 ![](pic/7/16spp.png)
 
 
 128ssp密度下的渲染图
-使用USTC Vlab运行
-用时:3862 seconds
+
+用时:105 seconds
+
 ![](pic/7/128spp.png)
+
+
+1024ssp密度下的渲染图
+
+用时:567 seconds
+
+![](pic/7/1024spp.png)
+

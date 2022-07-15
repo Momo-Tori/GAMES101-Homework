@@ -3,6 +3,7 @@
 //
 
 #include "Scene.hpp"
+const float small=1e-5;
 
 void Scene::buildBVH()
 {
@@ -82,22 +83,22 @@ Vector3f Scene::shade(Intersection const &pInter, Vector3f wo) const
     sampleLight(inter, pdf_light);
     auto ws = (inter.coords - p).normalized();
     Vector3f L_dir;
-    if (dotProduct(ws, pInter.normal) >= 0)
+    if (float cos1 = dotProduct(-ws, inter.normal), cos2 = dotProduct(ws, pInter.normal); cos1 >= 0 && cos2 >= 0)
     {
-        auto shot = intersect(Ray(p + ws * EPSILON, ws));
+        auto shot = intersect(Ray(p + ws * small, ws));
         if ((shot.coords - inter.coords).norm() < EPSILON)
         {
-            L_dir = inter.emit * pInter.m->eval(wo, ws, pInter.normal) * dotProduct(ws, pInter.normal) * dotProduct(-ws, inter.normal) / pow((inter.coords - p).norm(), 2) / pdf_light;
+            L_dir = inter.emit * pInter.m->eval(wo, ws, pInter.normal) * cos1 * cos2 / pow((inter.coords - p).norm(), 2) / pdf_light;
         }
     }
     Vector3f L_indir;
     if (get_random_float() < RussianRoulette)
     {
         auto wi = pInter.m->sample(wo, pInter.normal);
-        auto shot = intersect(Ray(p + wi * EPSILON, wi));
-        if (shot.happened && shot.emit.norm() < EPSILON)
+        auto shot = intersect(Ray(p+ wi * small, wi));
+        if (auto pdf=pInter.m->pdf(wo, wi, pInter.normal);pdf>=EPSILON&&shot.happened && shot.emit.norm() < EPSILON)
         {
-            L_indir = shade(shot, wi) * pInter.m->eval(wo, wi, pInter.normal) * dotProduct(wi, pInter.normal) / pInter.m->pdf(wo, wi, pInter.normal) / RussianRoulette;
+            L_indir = shade(shot, wi) * pInter.m->eval(wo, wi, pInter.normal) * dotProduct(wi, pInter.normal) / pdf / RussianRoulette;
         }
     }
     Vector3f L_self = pInter.emit * dotProduct(-wo, pInter.normal);
